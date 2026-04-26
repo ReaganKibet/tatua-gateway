@@ -1,0 +1,16 @@
+{
+  "businesses": [
+    {
+      "id": "4effb003-b767-4467-91f9-636233d634d0",
+      "name": "Test Shop",
+      "shortcode": "174379",
+      "shortcode_type": "till",
+      "api_key": "tatua_4a8173dacb964bf88a60e41b715a3137",
+      "webhook_url": null,
+      "created_at": "2026-04-26T15:18:35.344Z",
+      "active": true
+    }
+  ],
+  "transactions": [],
+  "webhookLogs": []
+}
