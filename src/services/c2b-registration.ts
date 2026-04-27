@@ -58,8 +58,12 @@ export async function registerC2BUrls(shortcode: string): Promise<RegisterC2BRes
       data: response.data,
     };
   } catch (error: any) {
-    const msg = error?.response?.data?.errorMessage || error?.message || 'Unknown error';
-    console.error(`[C2B] Registration failed for ${shortcode}:`, msg);
+    const responseData = error?.response?.data;
+    const msg = responseData
+      ? JSON.stringify(responseData)
+      : error?.message || 'Unknown error';
+    console.error(`[C2B] Full error for ${shortcode}:`, msg);
+    console.error(`[C2B] Status:`, error?.response?.status);
     return { success: false, message: msg };
   }
 }
