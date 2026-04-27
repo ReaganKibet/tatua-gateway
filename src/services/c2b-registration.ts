@@ -40,7 +40,7 @@ export async function registerC2BUrls(shortcode: string): Promise<RegisterC2BRes
     };
 
     const response = await axios.post(
-      `${getDarajaBaseUrl()}/mpesa/c2b/v2/registerurl`,
+      `${getDarajaBaseUrl()}/mpesa/c2b/v1/registerurl`,
       payload,
       {
         headers: {
