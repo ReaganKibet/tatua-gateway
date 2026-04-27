@@ -28,6 +28,10 @@ const router = Router();
 // Safaricom calls this after the payment has been successfully processed.
 // We MUST respond with HTTP 200 quickly. All heavy work is async.
 
+router.get('/confirmation', (req: Request, res: Response) => {
+  res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' });
+});
+
 router.post('/confirmation', async (req: Request, res: Response) => {
   // Immediately respond to Safaricom so it doesn't retry
   res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' });
@@ -97,6 +101,10 @@ router.post('/confirmation', async (req: Request, res: Response) => {
 // ─── Validation ────────────────────────────────────────────────────────────────
 // Safaricom calls this BEFORE processing the payment.
 // We accept all payments by default. You can add business logic here.
+
+router.get('/validation', (req: Request, res: Response) => {
+  res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' });
+});
 
 router.post('/validation', (req: Request, res: Response) => {
   const body = req.body;
