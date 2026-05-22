@@ -34,7 +34,7 @@ export async function registerC2BUrls(shortcode: string): Promise<RegisterC2BRes
 
     const payload = {
       ShortCode: shortcode,
-      ResponseType: 'Completed',
+      ResponseType: 'Cancelled',
       ConfirmationURL: confirmationURL,
       ValidationURL: validationURL,
     };

@@ -6,6 +6,7 @@
  */
 
 import axios from 'axios';
+import crypto from 'crypto';
 import { Transaction, logWebhookAttempt, markWebhookDelivered } from '../db/database';
 
 export interface WebhookPayload {
@@ -46,16 +47,25 @@ export async function forwardPaymentEvent(
   };
 
   const MAX_ATTEMPTS = 3;
+  const payloadJson = JSON.stringify(payload);
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Tatua-Event': 'payment.received',
+    'X-Tatua-TransID': transaction.trans_id,
+  };
+
+  const signingSecret = process.env.WEBHOOK_SIGNING_SECRET;
+  if (signingSecret) {
+    const sig = crypto.createHmac('sha256', signingSecret).update(payloadJson).digest('hex');
+    headers['X-Tatua-Signature'] = `sha256=${sig}`;
+  }
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       const response = await axios.post(webhookUrl, payload, {
         timeout: 10_000,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tatua-Event': 'payment.received',
-          'X-Tatua-TransID': transaction.trans_id,
-        },
+        headers,
       });
 
       logWebhookAttempt({

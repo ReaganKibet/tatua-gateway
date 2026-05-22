@@ -21,6 +21,7 @@ import {
   getTransactionByTransId,
 } from '../db/database';
 import { forwardPaymentEvent } from '../services/webhook-forwarder';
+import { extractStatusResultParams } from '../services/transaction-status';
 
 const router = Router();
 
@@ -122,6 +123,38 @@ router.post('/validation', (req: Request, res: Response) => {
   }
 
   // Accept the payment
+  res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' });
+});
+
+// ─── Transaction Status Result ─────────────────────────────────────────────────
+// Daraja calls this asynchronously after we POST to /mpesa/transactionstatus/v6/query.
+// We log the result; extend this to update DB or notify business if needed.
+
+router.post('/result', (req: Request, res: Response) => {
+  res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' });
+
+  const body = req.body;
+  console.log('[TransactionStatus Result]', JSON.stringify(body));
+
+  const result = body?.Result;
+  if (!result) return;
+
+  const code = result.ResultCode;
+  const transId = result.TransactionID;
+  const params = extractStatusResultParams(body);
+
+  if (code === 0) {
+    console.log(`[TransactionStatus] ${transId} verified — Status: ${params.TransactionStatus}, Amount: ${params.Amount}`);
+  } else {
+    console.warn(`[TransactionStatus] ${transId} query failed — Code: ${code}, Desc: ${result.ResultDesc}`);
+  }
+});
+
+// ─── Transaction Status Timeout ────────────────────────────────────────────────
+// Daraja calls this if the status query times out on their side.
+
+router.post('/timeout', (req: Request, res: Response) => {
+  console.warn('[TransactionStatus Timeout]', JSON.stringify(req.body));
   res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' });
 });
 

@@ -16,6 +16,7 @@ import {
   getTransactionByTransId,
   countTransactionsByBusiness,
 } from '../db/database';
+import { pullC2BTransactions } from '../services/pull-transactions';
 
 const router = Router();
 
@@ -79,6 +80,32 @@ router.get('/transactions/:transId', (req: Request, res: Response) => {
   }
 
   res.json({ data: formatTransaction(transaction) });
+});
+
+// ─── POST /api/reconcile ──────────────────────────────────────────────────────
+// Pull missed C2B transactions from Daraja for this business's shortcode.
+// Idempotent — already-stored TransIDs are skipped.
+
+router.post('/reconcile', async (req: Request, res: Response) => {
+  const business = req.business!;
+  const { startDate, endDate, offset } = req.body;
+
+  if (!startDate || !endDate) {
+    res.status(400).json({ error: 'startDate and endDate required (format: YYYYMMDD)' });
+    return;
+  }
+
+  try {
+    const result = await pullC2BTransactions(
+      business.shortcode,
+      String(startDate),
+      String(endDate),
+      typeof offset === 'number' ? offset : 0
+    );
+    res.status(result.success ? 200 : 500).json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ─── Formatter ────────────────────────────────────────────────────────────────

@@ -13,6 +13,8 @@ import { Router, Request, Response } from 'express';
 import { requireAdminSecret } from '../middleware/auth';
 import { createBusiness, listBusinesses } from '../db/database';
 import { registerC2BUrls } from '../services/c2b-registration';
+import { pullC2BTransactions } from '../services/pull-transactions';
+import { queryTransactionStatus } from '../services/transaction-status';
 
 const router = Router();
 
@@ -87,6 +89,55 @@ router.post('/register-c2b', async (req: Request, res: Response) => {
 
   const result = await registerC2BUrls(String(shortcode));
   res.status(result.success ? 200 : 500).json(result);
+});
+
+// ─── POST /admin/reconcile ────────────────────────────────────────────────────
+// Pull C2B transactions from Daraja for a shortcode + date range.
+// Syncs any missed payments into the local DB (idempotent — skips duplicates).
+
+router.post('/reconcile', async (req: Request, res: Response) => {
+  const { shortcode, startDate, endDate, offset } = req.body;
+
+  if (!shortcode || !startDate || !endDate) {
+    res.status(400).json({ error: 'shortcode, startDate, endDate required (format: YYYYMMDD)' });
+    return;
+  }
+
+  try {
+    const result = await pullC2BTransactions(
+      String(shortcode),
+      String(startDate),
+      String(endDate),
+      typeof offset === 'number' ? offset : 0
+    );
+    res.status(result.success ? 200 : 500).json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─── POST /admin/check-transaction ───────────────────────────────────────────
+// Submit an async transaction status query to Daraja.
+// Result will arrive at POST /daraja/result (async callback).
+
+router.post('/check-transaction', async (req: Request, res: Response) => {
+  const { transactionId, shortcode, identifierType } = req.body;
+
+  if (!transactionId || !shortcode) {
+    res.status(400).json({ error: 'transactionId and shortcode required' });
+    return;
+  }
+
+  try {
+    const result = await queryTransactionStatus({
+      transactionId: String(transactionId),
+      shortcode: String(shortcode),
+      identifierType: identifierType ?? '4',
+    });
+    res.status(result.success ? 200 : 500).json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 export default router;
